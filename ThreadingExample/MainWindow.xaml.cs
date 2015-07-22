@@ -28,14 +28,6 @@ namespace ThreadingExample
         public MainWindow()
         {
             InitializeComponent();
-
-            this.sequence.OnStepAdvance += this.sequence_OnStepAdvance;
-        }
-
-        void sequence_OnStepAdvance(object sender, StepEventArgs e)
-        {
-            this.TextBox_Results.Text += e.StepResult + " ";
-            this.ProgressBar_Progress.Value += 1;
         }
 
         private async void Button_Click(object sender, RoutedEventArgs e)
@@ -50,9 +42,15 @@ namespace ThreadingExample
             ProgressBar_Progress.Maximum = count;
             this.cancelSource = new CancellationTokenSource();
 
+            IProgress<int> progress = new Progress<int>(elementValue =>
+            {
+                this.TextBox_Results.Text += elementValue + " ";
+                this.ProgressBar_Progress.Value += 1;
+            });
+
             try
             {
-                await sequence.CalculateAsync(count, cancelSource.Token);
+                await sequence.CalculateAsync(count, cancelSource.Token, progress);
 
                 this.TextBox_Results.Text += Environment.NewLine + "Sequence Complete!";
             }

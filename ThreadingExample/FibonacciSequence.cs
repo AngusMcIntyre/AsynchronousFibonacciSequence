@@ -21,10 +21,11 @@
         /// </summary>
         /// <param name="length">The length to calculate.</param>
         /// <param name="cancellationToken">The cancellation token used to cancel the work.</param>
+        /// <param name="progress">The progress reporting object. Each report specifies the value of a single element.</param>
         /// <returns>
         /// Sequence results.
         /// </returns>
-        public async Task CalculateAsync(int length, System.Threading.CancellationToken cancellationToken)
+        public async Task CalculateAsync(int length, System.Threading.CancellationToken cancellationToken, IProgress<int> progress)
         {
             List<int> results = new List<int>();
 
@@ -59,6 +60,8 @@
 
                         // check the cancellation token to see if cancellation is required
                         cancellationToken.ThrowIfCancellationRequested();
+
+                        progress.Report(results.Last());
                     });
 
                 var handler = this.OnStepAdvance;
