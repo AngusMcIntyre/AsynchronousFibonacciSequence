@@ -24,11 +24,8 @@
         /// <returns>
         /// Sequence results.
         /// </returns>
-        public Task CalculateAsync(int length, System.Threading.CancellationToken cancellationToken)
+        public async Task CalculateAsync(int length, System.Threading.CancellationToken cancellationToken)
         {
-            // create a default parent task. This allows us to used ContinueWith straight away
-            Task parentTask = Task.FromResult(true);
-
             List<int> results = new List<int>();
 
             for (int loopVariable = 0; loopVariable < length; loopVariable++)
@@ -36,7 +33,8 @@
                 int index = loopVariable;
 
                 // create a continuation to run asynchronously (probably the thread pool)
-                parentTask = parentTask.ContinueWith(task =>
+                await Task.Run(
+                    () =>
                     {
                         // check the cancellation token to see if cancellation is required
                         cancellationToken.ThrowIfCancellationRequested();
@@ -63,22 +61,12 @@
                         cancellationToken.ThrowIfCancellationRequested();
                     });
 
-                // create a continuation to report the results. This is forced to run on the UI thread
-                parentTask = parentTask.ContinueWith(
-                    task =>
-                     {
-                         var handler = this.OnStepAdvance;
-                         if (handler != null)
-                         {
-                             handler(this, new StepEventArgs(results.Last()));
-                         }
-                     }, 
-                     System.Threading.CancellationToken.None,
-                     TaskContinuationOptions.OnlyOnRanToCompletion, /// only report results if the task completed
-                     TaskScheduler.FromCurrentSynchronizationContext());
+                var handler = this.OnStepAdvance;
+                if (handler != null)
+                {
+                    handler(this, new StepEventArgs(results.Last()));
+                }
             }
-
-            return parentTask;
         }
     }
 }

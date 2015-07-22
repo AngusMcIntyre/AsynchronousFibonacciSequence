@@ -38,7 +38,7 @@ namespace ThreadingExample
             this.ProgressBar_Progress.Value += 1;
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private async void Button_Click(object sender, RoutedEventArgs e)
         {
             this.Button_Cancel.IsEnabled = true;
             this.Button_Calculate.IsEnabled = false;
@@ -50,28 +50,26 @@ namespace ThreadingExample
             ProgressBar_Progress.Maximum = count;
             this.cancelSource = new CancellationTokenSource();
 
-            Task worker = sequence.CalculateAsync(count, cancelSource.Token);
+            try
+            {
+                await sequence.CalculateAsync(count, cancelSource.Token);
 
-            worker.ContinueWith(task => 
-                {
-                    this.ProgressBar_Progress.Value = ProgressBar_Progress.Maximum;
-                    this.Button_Cancel.IsEnabled = false;
-                    this.Button_Calculate.IsEnabled = true;
-
-                    switch (task.Status)
-                    {
-                        case TaskStatus.Canceled:
-                            this.TextBox_Results.Text += Environment.NewLine + "Sequence Cancelled!";
-                            break;
-                        case TaskStatus.Faulted:
-                            this.TextBox_Results.Text += Environment.NewLine + "Error generating sequence.";
-                            break;
-                        case TaskStatus.RanToCompletion:
-                            this.TextBox_Results.Text += Environment.NewLine + "Sequence Complete!";
-                            break;
-                    }
-
-                }, TaskScheduler.FromCurrentSynchronizationContext());
+                this.TextBox_Results.Text += Environment.NewLine + "Sequence Complete!";
+            }
+            catch (OperationCanceledException)
+            {
+                this.TextBox_Results.Text += Environment.NewLine + "Sequence Cancelled!";
+            }
+            catch
+            {
+                this.TextBox_Results.Text += Environment.NewLine + "Error generating sequence.";
+            }
+            finally
+            {
+                this.ProgressBar_Progress.Value = ProgressBar_Progress.Maximum;
+                this.Button_Cancel.IsEnabled = false;
+                this.Button_Calculate.IsEnabled = true;
+            }
         }
 
         private void Button_Cancel_Click(object sender, RoutedEventArgs e)
