@@ -12,6 +12,11 @@
     public class FibonacciSequence
     {
         /// <summary>
+        /// The diagnostic logger.
+        /// </summary>
+        static NLog.ILogger logger = NLog.LogManager.GetCurrentClassLogger();
+
+        /// <summary>
         /// Notifies that a sequence element has been generated.
         /// </summary>
         public event EventHandler<StepEventArgs> OnStepAdvance;
@@ -27,11 +32,7 @@
         /// </returns>
         public async Task CalculateAsync(int length, System.Threading.CancellationToken cancellationToken, IProgress<int> progress)
         {
-            System.Diagnostics.TraceSource traceSource = new System.Diagnostics.TraceSource(this.GetType().Assembly.GetName().Name);
-
             System.Diagnostics.Trace.CorrelationManager.StartLogicalOperation("CalculateSequence");
-            traceSource.TraceInformation("Started calculating sequence");
-
             List<int> results = new List<int>();
 
             try
@@ -63,7 +64,13 @@
                                 //throw new InvalidOperationException("Test Exception");
                             }
 
-                            traceSource.TraceInformation("Calculated element, Element={{{0}}}", results.Last());
+                            NLog.LogEventInfo info = new NLog.LogEventInfo();
+                            info.LoggerName = logger.Name;
+                            info.Message = "Calculated element";
+                            info.Properties.Add("ElementValue", results.Last());
+                            info.Level = NLog.LogLevel.Info;
+                            logger.Log(info);
+
                             System.Threading.Thread.Sleep(500);
 
                             // check the cancellation token to see if cancellation is required
@@ -79,15 +86,13 @@
                     }
                 }
             }
-            catch(Exception e)
+            catch(Exception ex)
             {
-                traceSource.TraceEvent(System.Diagnostics.TraceEventType.Error, 0, "An error occurred while calculating the sequence.");
-                traceSource.TraceEvent(System.Diagnostics.TraceEventType.Error, 0, $"The sequence so far is: {string.Join(",", results)}");
-                traceSource.TraceEvent(System.Diagnostics.TraceEventType.Error, 0, e.ToString());
+                logger.Error(ex, $"An error occurred while calculating the sequence. The sequence so far is: {string.Join(",", results)}");
             }
             finally
             {
-                traceSource.TraceInformation("Finished calculating sequence");
+                logger.Info("Finished calculating sequence");
                 System.Diagnostics.Trace.CorrelationManager.StopLogicalOperation();
             }
         }
