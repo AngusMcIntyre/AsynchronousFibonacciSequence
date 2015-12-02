@@ -34,6 +34,9 @@
 
             List<int> results = new List<int>();
 
+            Guid activityID = System.Diagnostics.Trace.CorrelationManager.ActivityId;
+            System.Diagnostics.Trace.CorrelationManager.ActivityId = Guid.NewGuid();
+
             try
             {
                 for (int loopVariable = 0; loopVariable < length; loopVariable++)
@@ -63,6 +66,7 @@
                                 //throw new InvalidOperationException("Test Exception");
                             }
 
+                            traceSource.TraceInformation(System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString());
                             traceSource.TraceInformation("Calculated element, Element={{{0}}}", results.Last());
                             System.Threading.Thread.Sleep(500);
 
@@ -89,6 +93,8 @@
             {
                 traceSource.TraceInformation("Finished calculating sequence");
                 System.Diagnostics.Trace.CorrelationManager.StopLogicalOperation();
+
+                System.Diagnostics.Trace.CorrelationManager.ActivityId = activityID;
             }
         }
     }
